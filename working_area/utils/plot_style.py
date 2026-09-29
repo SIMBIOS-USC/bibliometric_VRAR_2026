@@ -18,16 +18,18 @@ import matplotlib as mpl
 CATEGORY_COLORS: dict[str, str] = {
     "VR":                       "#e53935",   # Deep Red
     "AR":                       "#1e88e5",   # Deep Blue
-    "MR/XR":                    "#43a047",   # Deep Green
+    "MR":                       "#43a047",   # Deep Green  (Mixed Reality — device-grounded)
+    "XR":                       "#00897b",   # Teal        (Extended Reality — umbrella)
     "Hybrid/Multi-technology":  "#8e24aa",   # Deep Purple
 }
 """
-Canonical colours for the four technology categories.
+Canonical colours for the five technology categories.
+MR (Mixed Reality) and XR (Extended Reality) are now distinct categories.
 Must match the colours used in ALL manuscript figures.
 """
 
-CATEGORY_ORDER: list[str] = ["VR", "AR", "MR/XR", "Hybrid/Multi-technology"]
-"""Canonical display order for categories."""
+CATEGORY_ORDER: list[str] = ["VR", "AR", "MR", "XR", "Hybrid/Multi-technology"]
+"""Canonical display order for the five technology categories."""
 
 ORIENTATION_COLORS: dict[str, str] = {
     "Technical":    "#0288d1",

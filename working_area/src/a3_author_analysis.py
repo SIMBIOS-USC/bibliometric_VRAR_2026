@@ -201,7 +201,8 @@ def run(df: pd.DataFrame, results_dir: Path) -> None:
         )
         x_limit = global_max * 1.25
 
-        fig, axes = plt.subplots(4, 1, figsize=(11.69, 16.54), facecolor="white")
+        n_cats = len(CATEGORY_ORDER)
+        fig, axes = plt.subplots(n_cats, 1, figsize=(11.69, n_cats * 4.1), facecolor="white")
         for i, cat in enumerate(CATEGORY_ORDER):
             ax = axes[i]
             ax.set_facecolor("white")

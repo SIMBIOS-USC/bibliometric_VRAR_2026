@@ -49,9 +49,12 @@ TRIGGERS: dict[str, list[tuple[int, str]]] = {
         (2016, "Pokémon GO"),
         (2024, "Apple Vision Pro"),
     ],
-    "MR/XR": [
-        (2012, "Oculus Kickstarter"),
+    "MR": [
         (2016, "HoloLens Dev"),
+        (2024, "Apple Vision Pro"),
+    ],
+    "XR": [
+        (2012, "Oculus Kickstarter"),
         (2024, "Apple Vision Pro"),
     ],
     "Hybrid/Multi-technology": [],
@@ -96,7 +99,7 @@ def run(df: pd.DataFrame, results_dir: Path) -> None:
     # ── Create figure ────────────────────────────────────────────────────────
     sns.set_theme(style="whitegrid",
                   rc={"axes.facecolor": "white", "figure.facecolor": "white"})
-    fig, axes = plt.subplots(4, 1, figsize=(11.69, 16.54),
+    fig, axes = plt.subplots(5, 1, figsize=(11.69, 20),
                              sharex=True, facecolor="white")
     fig.subplots_adjust(hspace=0.4)
 

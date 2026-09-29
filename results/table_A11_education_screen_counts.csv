@@ -1,5 +1,0 @@
-Education_Screen_Disposition,Has_Education_Cue,Has_Clinical_Use_Cue,Documents,Percent of screened corpus
-exclude_algorithm,False,False,208,2.11
-exclude_algorithm,False,True,92,0.93
-include_algorithm,True,False,8397,85.33
-include_algorithm,True,True,1144,11.62

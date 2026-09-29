@@ -11,7 +11,7 @@ from pathlib import Path
 import pandas as pd
 
 from utils.classifier import (
-    CLASSIFICATION_FIELDS, EXCLUSION_TERMS, MR_XR_TERMS, PEDAGOGICAL_TERMS,
+    CLASSIFICATION_FIELDS, EXCLUSION_TERMS, MR_TERMS, XR_TERMS, PEDAGOGICAL_TERMS,
     TECHNICAL_TERMS, VR_TERMS, AR_TERMS, XR_HARDWARE_ANCHOR,
 )
 
@@ -39,7 +39,8 @@ def run(df: pd.DataFrame, results_dir: Path) -> None:
             "Orientation": row.get("Orientation", ""),
             "Matched_VR_terms": _matched_terms(tech_text, VR_TERMS),
             "Matched_AR_terms": _matched_terms(tech_text, AR_TERMS),
-            "Matched_MR_XR_terms": _matched_terms(tech_text, MR_XR_TERMS),
+            "Matched_MR_terms": _matched_terms(tech_text, MR_TERMS),
+            "Matched_XR_terms": _matched_terms(tech_text, XR_TERMS),
             "Matched_Exclusion_terms": _matched_terms(tech_text, EXCLUSION_TERMS),
             "Matched_Hardware_rescue_terms": _matched_terms(tech_text, XR_HARDWARE_ANCHOR),
             "Matched_Technical_terms": _matched_terms(ori_text, TECHNICAL_TERMS),

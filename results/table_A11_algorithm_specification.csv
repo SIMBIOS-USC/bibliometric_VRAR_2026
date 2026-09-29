@@ -1,8 +1,0 @@
-Component,Operational rule
-Input fields,Title; Abstract; Author Keywords
-Education cue dictionary,education/educational; teaching; teacher(s); instruction/instructional; curriculum/curricula; pedagogy/pedagogical; student(s); learner(s); classroom(s); school(s); course(s); training; trainee(s); resident(s); medical education; nursing education; health professions education; clinical education; learning outcome(s); learning performance; learning gain(s); learning experience; learning environment; learning objective(s); knowledge acquisition; skill(s) acquisition; professional development; resident training
-Clinical-use dictionary (audit only),diagnosis/diagnostic; treatment; therapy; rehabilitation; patient care; patient outcome(s); surgical planning; treatment planning; intraoperative; preoperative planning; surgery planning
-Computational-language safeguard,\bmachine learning\b; \bdeep learning\b; \btraining data\b; \btraining dataset\b; \btraining set\b; \btrain(?:ing)? the model\b
-Include,At least one qualifying education/training cue in any input field; a clinical-use cue does not override inclusion.
-Exclude,"No qualifying education/training cue in any input field, including records with clinical-use cues only."
-Decision process,Case-insensitive regex matching; deterministic binary output; no human adjudication or Index Keywords.

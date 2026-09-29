@@ -40,9 +40,10 @@ GLOBAL_COLOR = '#1a1a2e'
 VR_COLOR     = '#4a90d9'
 AR_COLOR     = '#e8773a'
 MR_COLOR     = '#3ab795'
+XR_COLOR     = '#2E7D32'
 HYBRID_COLOR = '#9b59b6'
 
-CATEGORY_ORDER = ['VR', 'AR', 'MR/XR', 'Hybrid/Multi-technology']
+CATEGORY_ORDER = ['VR', 'AR', 'MR', 'XR', 'Hybrid/Multi-technology']
 
 
 def _extract_papers_kws(df_sub: pd.DataFrame) -> list[list[str]]:
@@ -144,14 +145,16 @@ def run(df_classified: pd.DataFrame, results_dir: Path) -> None:
 
     top_vr = count_classified(df_cl[df_cl['Tech'] == 'VR'])
     top_ar = count_classified(df_cl[df_cl['Tech'] == 'AR'])
-    top_mr = count_classified(df_cl[df_cl['Tech'] == 'MR/XR'])
+    top_mr = count_classified(df_cl[df_cl['Tech'] == 'MR'])
+    top_xr = count_classified(df_cl[df_cl['Tech'] == 'XR'])
     top_hy = count_classified(df_cl[df_cl['Tech'] == 'Hybrid/Multi-technology'])
 
     # Save tables
     top_global.to_csv(results_dir / "table_A5c_global_keywords.csv", index=False)
     cat_rows = []
     for cat, df_t in [('VR', top_vr), ('AR', top_ar),
-                      ('MR/XR', top_mr), ('Hybrid/Multi-technology', top_hy)]:
+                      ('MR', top_mr), ('XR', top_xr),
+                      ('Hybrid/Multi-technology', top_hy)]:
         for _, row in df_t.iterrows():
             cat_rows.append({'category': cat, 'keyword': row['Keyword'],
                              'count': row['Count']})
@@ -167,11 +170,11 @@ def run(df_classified: pd.DataFrame, results_dir: Path) -> None:
         'axes.spines.right': False,
     })
 
-    fig = plt.figure(figsize=(16.54, 11.69), facecolor='white')  # A4 landscape
+    fig = plt.figure(figsize=(20, 11.69), facecolor='white')  # wider for 5 panels
     outer     = gridspec.GridSpec(2, 1, figure=fig,
                                   height_ratios=[1.3, 1.0], hspace=0.45)
     inner_top = gridspec.GridSpecFromSubplotSpec(1, 1, subplot_spec=outer[0])
-    inner_bot = gridspec.GridSpecFromSubplotSpec(1, 4, subplot_spec=outer[1],
+    inner_bot = gridspec.GridSpecFromSubplotSpec(1, 5, subplot_spec=outer[1],
                                                  wspace=0.85)
 
     # ── Panel Global ──────────────────────────────────────────────────────────
@@ -197,24 +200,29 @@ def run(df_classified: pd.DataFrame, results_dir: Path) -> None:
     subplot_data = [
         (top_vr, VR_COLOR,     'Virtual Reality'),
         (top_ar, AR_COLOR,     'Augmented Reality'),
-        (top_mr, MR_COLOR,     'Mixed / Extended Reality'),
-        (top_hy, HYBRID_COLOR, 'Hybrid/Multi-technology'),
+        (top_mr, MR_COLOR,     'Mixed Reality'),
+        (top_xr, XR_COLOR,     'Extended Reality'),
+        (top_hy, HYBRID_COLOR, 'Hybrid/Multi-tech'),
     ]
 
     for i, (top_t, color, title) in enumerate(subplot_data):
         ax = fig.add_subplot(inner_bot[i])
+        if top_t.empty:
+            ax.set_visible(False)
+            continue
         bars_t = ax.barh(top_t['Keyword'][::-1], top_t['Count'][::-1],
                          color=color, edgecolor='white',
                          linewidth=0.4, height=0.7)
         ax.set_facecolor('white')
-        ax.set_title(title, fontsize=13, fontweight='bold',
+        ax.set_title(title, fontsize=12, fontweight='bold',
                      color=color, pad=12, loc='left')
-        ax.tick_params(axis='y', labelsize=10)
-        ax.tick_params(axis='x', labelsize=9)
+        ax.tick_params(axis='y', labelsize=9)
+        ax.tick_params(axis='x', labelsize=8)
         for bar, val in zip(bars_t, top_t['Count'][::-1]):
             ax.text(val + 0.5, bar.get_y() + bar.get_height() / 2,
                     f'{val:,}', va='center', fontsize=8, color='#333')
-        ax.set_xlim(0, top_t['Count'].max() * 1.25)
+        max_val = top_t['Count'].max()
+        ax.set_xlim(0, max_val * 1.25 if max_val > 0 else 1)
         ax.grid(axis='x', linestyle='--', alpha=0.4)
         ax.set_xlabel("Papers", fontsize=10, color='#555')
 

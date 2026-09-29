@@ -22,13 +22,15 @@ from utils.countries import affiliation_countries, leading_affiliation_country, 
 _SCP_COLORS = {
     "VR":                      "#D32F2F",
     "AR":                      "#1565C0",
-    "MR/XR":                   "#2E7D32",
+    "MR":                      "#2E7D32",
+    "XR":                      "#00695C",
     "Hybrid/Multi-technology": "#6A1B9A",
 }
 _MCP_COLORS = {
     "VR":                      "#FFCDD2",
     "AR":                      "#BBDEFB",
-    "MR/XR":                   "#C8E6C9",
+    "MR":                      "#C8E6C9",
+    "XR":                      "#B2DFDB",
     "Hybrid/Multi-technology": "#E1BEE7",
 }
 

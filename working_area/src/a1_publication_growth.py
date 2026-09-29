@@ -66,7 +66,8 @@ def run(df: pd.DataFrame, results_dir: Path) -> None:
     years = np.arange(1991, 2026)
 
     # --- Figure: 4-panel evolution ---
-    fig, axes = plt.subplots(4, 1, figsize=(11.69, 16.54), sharex=True, facecolor="white")
+    n_cats = len(CATEGORY_ORDER)
+    fig, axes = plt.subplots(n_cats, 1, figsize=(11.69, n_cats * 4.1), sharex=True, facecolor="white")
     fig.subplots_adjust(hspace=0.3, right=0.82)
 
     all_stats = []

@@ -58,21 +58,29 @@ AR_TERMS: list[str] = [
 ]
 """AR-specific terms."""
 
-MR_XR_TERMS: list[str] = [
+MR_TERMS: list[str] = [
     "mixed reality",
-    "extended reality",
-    " xr ",
     " mr ",
-    "spatial computing",
     "hololens",
     "magic leap",
     "windows mixed reality",
+    "spatial computing",
 ]
 """
-MR/XR terms. This is a terminological grouping. Mixed Reality and Extended Reality
-are grouped because they overlap heavily in the corpus. Metaverse, digital twin,
-and passthrough are intentionally excluded because they are broader concepts that
-do not necessarily imply MR/XR hardware.
+Mixed Reality-specific terms (Milgram-Kishino continuum, 1994).
+Includes devices that are canonically associated with MR environments
+(HoloLens, Magic Leap). Spatial computing is included here because it
+describes the same blended physical-digital interaction model.
+"""
+
+XR_TERMS: list[str] = [
+    "extended reality",
+    " xr ",
+]
+"""
+Extended Reality-specific terms. XR is a broader umbrella concept that
+encompasses VR, AR, and MR under a single label. Records using this
+term without a more specific technology signal are classified as XR.
 """
 
 EXCLUSION_TERMS: list[str] = [
@@ -92,9 +100,11 @@ is not relevant to the XR corpus (e.g., operations research papers that use
 to an agent role, not Augmented Reality).
 """
 
-CATEGORY_ORDER: list[str] = ["VR", "AR", "MR/XR", "Hybrid/Multi-technology"]
+CATEGORY_ORDER: list[str] = ["VR", "AR", "MR", "XR", "Hybrid/Multi-technology"]
 """
-Canonical display order for the four technology categories.
+Canonical display order for the five technology categories.
+MR (Mixed Reality) and XR (Extended Reality) are now separated to allow
+finer-grained analysis of each sub-community.
 Used consistently across all analysis modules for table rows and figure panels.
 """
 
@@ -204,7 +214,7 @@ classification that supports Figure 2 and RQ4 in the manuscript.
 # ---------------------------------------------------------------------------
 def classify_technology(row: pd.Series) -> str | None:
     """
-    Classify a Scopus record into one of four XR technology categories.
+    Classify a Scopus record into one of five XR technology categories.
 
     Parameters
     ----------
@@ -215,12 +225,16 @@ def classify_technology(row: pd.Series) -> str | None:
     Returns
     -------
     str or None
-        One of: 'VR', 'AR', 'MR/XR', 'Hybrid/Multi-technology'
+        One of: 'VR', 'AR', 'MR', 'XR', 'Hybrid/Multi-technology'
         Returns None if the record should be excluded (non-XR noise) or
         cannot be classified into any category.
 
-    MR/XR takes priority over the other categories. Without an MR/XR signal,
-    records with both VR and AR signals are labelled Hybrid/Multi-technology.
+    Classification priority (highest → lowest specificity):
+      1. MR (Mixed Reality — device-grounded: HoloLens, Magic Leap, etc.)
+      2. XR (Extended Reality — umbrella label without a more specific signal)
+      3. Hybrid/Multi-technology (explicit VR + AR co-mention, no MR/XR)
+      4. Pure AR
+      5. Pure VR
     Exclusion phrases suppress a record only when no technology signal matches.
     """
     # Combine the fields used for classification.
@@ -231,27 +245,30 @@ def classify_technology(row: pd.Series) -> str | None:
             parts.append(str(val))
     text = " ".join(parts).lower()
 
-    # Pad text with spaces to enable reliable whole-word matching for short tokens like ' ar ', ' vr '
+    # Pad with spaces for reliable whole-word matching of short tokens (' ar ', ' vr ', ' mr ', ' xr ')
     text = f" {text} "
 
-    # Detect explicit category evidence before applying broad exclusion phrases.
-    has_mr_xr = any(term in text for term in MR_XR_TERMS)
-    has_ar = any(term in text for term in AR_TERMS)
-    has_vr = any(term in text for term in VR_TERMS)
+    # Detect explicit category signals.
+    has_mr  = any(term in text for term in MR_TERMS)
+    has_xr  = any(term in text for term in XR_TERMS)
+    has_ar  = any(term in text for term in AR_TERMS)
+    has_vr  = any(term in text for term in VR_TERMS)
 
-    # Terms such as "multi-agent" should not remove a record that separately
-    # names an XR technology. The previous hardware-only rescue rule wrongly
-    # discarded genuine VR/AR records without a device name.
+    # Suppress non-XR records (e.g. operations-research uses of 'mixed')
+    # but only when no XR technology signal is present at all.
     has_exclusion = any(ex in text for ex in EXCLUSION_TERMS)
-    if has_exclusion and not (has_mr_xr or has_ar or has_vr):
-        return None  # Non-XR record, exclude
+    if has_exclusion and not (has_mr or has_xr or has_ar or has_vr):
+        return None
 
-    # --- Priority 2: MR/XR (highest specificity) ---
-    if has_mr_xr:
-        return "MR/XR"
+    # --- Priority 1: MR (device-level specificity, highest confidence) ---
+    if has_mr:
+        return "MR"
 
-    # --- Priority 3: Hybrid (VR + AR co-mention, no MR/XR) ---
-    # This implements the MANUSCRIPT definition of Hybrid/Multi-technology
+    # --- Priority 2: XR (umbrella label, no more specific signal found) ---
+    if has_xr:
+        return "XR"
+
+    # --- Priority 3: Hybrid (VR + AR co-mention, no MR/XR signal) ---
     if has_vr and has_ar:
         return "Hybrid/Multi-technology"
 
@@ -318,7 +335,7 @@ def add_classifications(df: pd.DataFrame) -> pd.DataFrame:
     -------
     pd.DataFrame
         Same DataFrame with two new columns:
-          - 'Tech_Category': 'VR' | 'AR' | 'MR/XR' | 'Hybrid/Multi-technology' | NaN
+          - 'Tech_Category': 'VR' | 'AR' | 'MR' | 'XR' | 'Hybrid/Multi-technology' | NaN
           - 'Orientation': 'Technical' | 'Pedagogical'
     """
     df = df.copy()
@@ -355,7 +372,7 @@ def print_classification_report(df: pd.DataFrame) -> None:
     print(f"  Excluded/Unknown  : {unclassified:>7,} ({100*unclassified/total:.1f}%)")
     print("-" * 60)
     counts = df["Tech_Category"].value_counts()
-    for cat in ["VR", "AR", "MR/XR", "Hybrid/Multi-technology"]:
+    for cat in CATEGORY_ORDER:
         n = counts.get(cat, 0)
         print(f"  {cat:<30}: {n:>6,} ({100*n/total:.1f}%)")
     print("=" * 60)
