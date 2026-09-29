@@ -1,24 +1,4 @@
-"""
-src/a8_network_graphs.py
-========================
-Analysis Module 8: Network Analysis & Thematic Clusters
--------------------------------------------------------
-Generates high-quality network graphs matching the visual style
-requested (VOSviewer / Gephi style).
-
-Includes:
-A) Keyword Co-occurrence Network (nodes sized by freq, edges by co-occurrence)
-B) Thematic Clusters (modularity class coloring)
-C) Author Co-citation/Collaboration Network
-
-Resolves Reviewer 2's request for robustness by making the thresholding
-explicit and reproducible.
-
-Outputs:
-  - fig_A8_network_keywords.png
-  - fig_A8_network_clusters.png
-  - fig_A8_network_authors.png
-"""
+"""Build keyword, author, institution, and cited-author networks."""
 
 import sys
 import itertools
@@ -210,7 +190,10 @@ def _author_cocitation_graph(documents: list[list[str]], cited_counts: Counter,
         present = sorted(set(authors) & eligible)
         edge_counts.update(itertools.combinations(present, 2))
     graph = nx.Graph()
-    graph.add_nodes_from((author, {"freq": cited_counts[author]}) for author in eligible)
+    # Stable insertion order matters here: Louvain's seeded output can still
+    # vary when nodes are inserted from an unordered set.
+    graph.add_nodes_from((author, {"freq": cited_counts[author]})
+                         for author in sorted(eligible))
     for (author_a, author_b), weight in edge_counts.items():
         if weight >= min_cocitations:
             graph.add_edge(author_a, author_b, weight=weight)

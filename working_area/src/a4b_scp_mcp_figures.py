@@ -1,18 +1,7 @@
-"""
-src/a4b_scp_mcp_figures.py
-==========================
-Analysis Module 4b: SCP vs MCP — Canonical Figures
-------------------------------------------------------
-This module consumes the canonical, cleaned and classified corpus produced by
-the master pipeline. It therefore uses the same deduplication, year window,
-technology classifier, and category definitions as every other analysis.
-  - MCP = affiliation field spans >1 distinct last-comma-token across semicolons
-  - Leading country = normalized country suffix of the first affiliation address
+"""SCP/MCP figures using the final classified corpus.
 
-Output files (saved to results/):
-  - fig_A4b_scp_mcp_braces.png    ← exact stacked bar with brace annotations
-  - fig_A4b_scp_mcp_global_pie.png← global ratio pie (SCP / MCP / unresolved)
-  - table_A4b_country_collab.csv
+Countries are read from the address suffixes in Scopus's Affiliations field.
+The first listed affiliation supplies the country used in country-level plots.
 """
 
 from __future__ import annotations
@@ -58,28 +47,25 @@ def _leader_country(aff_str: str) -> str | None:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-def run(df_classified: pd.DataFrame, results_dir: Path,
-        raw_csv: Path | None = None) -> None:
+def run(df_classified: pd.DataFrame, results_dir: Path) -> None:
     """
-    Execute SCP vs MCP figures on the canonical analysis corpus.
+    Create SCP/MCP figures from the classified corpus.
 
     Parameters
     ----------
     df_classified : pd.DataFrame
-        Cleaned and canonically classified corpus from the master pipeline.
+        Cleaned and classified corpus from the pipeline.
     results_dir : Path
         Output directory.
-    raw_csv : Path or None
-        Retained for backwards compatibility; it is intentionally ignored.
     """
-    print("\n[A4b] SCP vs MCP — Paper-Exact Figures")
+    print("\n[A4b] SCP vs MCP figures")
     print("-" * 50)
 
     apply_global_style(font_size=12)
     results_dir.mkdir(parents=True, exist_ok=True)
 
     if "Tech_Category" not in df_classified.columns:
-        print("  [ERROR] Canonical Tech_Category column not found.")
+        print("  [ERROR] Tech_Category column not found.")
         return
     df = df_classified.copy()
     df['_cat'] = df['Tech_Category']
@@ -128,7 +114,7 @@ def run(df_classified: pd.DataFrame, results_dir: Path,
     print(f"  → Saved: {results_dir / 'table_A4b_country_collab.csv'}")
 
     # ─────────────────────────────────────────────────────────────────────────
-    # FIGURE A — Stacked bar with brace annotations (exact match to paper)
+    # Stacked SCP/MCP counts by leading country.
     # ─────────────────────────────────────────────────────────────────────────
     n = len(pivot)
     x = np.arange(n)

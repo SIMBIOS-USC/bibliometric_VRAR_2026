@@ -1,34 +1,7 @@
-"""
-src/a2b_hardware_triggers.py
-============================
-Analysis Module 2b: Technical vs Pedagogical with Hardware Triggers
---------------------------------------------------------------------
-Reproduces the exact 4-panel figure from the manuscript:
-  "Technical and Pedagogical Research in {Category} Education (1991-2025)"
+"""Plot orientation counts by technology category with hardware milestones.
 
-One panel per technology category, each showing:
-  - Blue line  → Pedagogical Research publications per year
-  - Red line   → Technical Development publications per year
-  - Shaded area under each line
-  - Vertical dashed red lines at key hardware milestones
-
-Hardware milestone annotations (exactly matching manuscript):
-  VR:  Oculus Kickstarter (2012), Samsung Gear VR (2015),
-        Oculus/Vive/PSVR (2016), Meta Quest / Valve Index (2019),
-        Apple Vision Pro (2024)
-  AR:  HTC Dream/Wikitude (2008), Oculus Kickstarter (2012),
-        Google Glass (2013), Pokémon GO (2016), Apple Vision Pro (2024)
-  MR/XR: Oculus Kickstarter (2012), HoloLens Dev (2016), Apple Vision Pro (2024)
-  Hybrid: (none — clean panel)
-
-Orientation logic:
-  Uses the canonical classify_orientation() from utils/classifier.py
-  which checks pedagogical-indicator keywords against technical-indicator
-  keywords in Title + Abstract + Author Keywords.
-
-Output files (saved to results/):
-  - fig_A2b_hardware_triggers.png   ← 4-panel figure matching manuscript
-
+The vertical lines mark selected product releases for context; the figure does
+not estimate their effect on publication counts.
 """
 
 from __future__ import annotations
@@ -45,22 +18,22 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from utils.classifier import CATEGORY_ORDER
 from utils.plot_style import save_figure
 
-# ── Global settings ──────────────────────────────────────────────────────────
+# Plot range
 START_YEAR = 1991
 END_YEAR   = 2025
 
 _PALETTE = {
-    "Pedagogical": "#1976D2",    # blue  — matches original
-    "Technical":   "#E64A19",    # deep orange/red — matches original
+    "Pedagogical": "#1976D2",
+    "Technical":   "#E64A19",
 }
 
-# Display labels (matching legend in original figure)
+# Legend labels
 _LABEL = {
     "Pedagogical": "Pedagogical Research",
     "Technical":   "Technical Development",
 }
 
-# ── Hardware milestone events per category ────────────────────────────────────
+# Selected hardware milestones, by category
 TRIGGERS: dict[str, list[tuple[int, str]]] = {
     "VR": [
         (2012, "Oculus Kickstarter"),
@@ -85,10 +58,9 @@ TRIGGERS: dict[str, list[tuple[int, str]]] = {
 }
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 def run(df: pd.DataFrame, results_dir: Path) -> None:
     """
-    Execute the Hardware Triggers figure (4-panel Technical vs Pedagogical).
+    Plot the annual orientation counts and milestone annotations.
 
     Parameters
     ----------
@@ -98,7 +70,7 @@ def run(df: pd.DataFrame, results_dir: Path) -> None:
     results_dir : Path
         Output directory.
     """
-    print("\n[A2b] Technical vs Pedagogical + Hardware Triggers (4-panel)")
+    print("\n[A2b] Orientation counts and hardware milestones")
     print("-" * 55)
 
     results_dir.mkdir(parents=True, exist_ok=True)

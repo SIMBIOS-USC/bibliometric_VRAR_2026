@@ -1,12 +1,12 @@
-| Stage                             |   Records before |   Removed |   Records after | Criterion                                                                                                      |
-|:----------------------------------|-----------------:|----------:|----------------:|:---------------------------------------------------------------------------------------------------------------|
-| 0_raw_load                        |            12505 |         0 |           12505 | Raw Scopus export loaded                                                                                       |
-| 1_col_standardize                 |            12505 |         0 |           12505 | Column names cleaned                                                                                           |
-| 2_exact_dedup                     |            12505 |         0 |           12505 | Exact row duplicates removed                                                                                   |
-| 3_doi_dedup                       |            12505 |         6 |           12499 | DOI-based duplicates removed                                                                                   |
-| 4_title_dedup                     |            12499 |        10 |           12489 | Exact normalized title + year + first-author match; distinct non-empty DOIs preserved                          |
-| 5_missing_metadata                |            12489 |        21 |           12468 | Records missing ['Title', 'Year', 'Source title'] removed                                                      |
-| 6_thematic_screen                 |            12468 |      2562 |            9906 | XR signal in Title, Abstract, or Author Keywords                                                               |
-| 7_year_filter                     |             9906 |        65 |            9841 | Publication year window 1991–2025 (inclusive)                                                                  |
-| 8_education_eligibility_algorithm |             9841 |       300 |            9541 | Binary deterministic title + abstract + author-keyword lexical rule; see A11 trace and algorithm specification |
-| 9_classification_eligibility      |             9541 |         6 |            9535 | Records assigned to one canonical technology category                                                          |
+| Stage                             |   Records before |   Removed |   Records after | Criterion                                                                                                       |
+|:----------------------------------|-----------------:|----------:|----------------:|:----------------------------------------------------------------------------------------------------------------|
+| 0_raw_load                        |            12505 |         0 |           12505 | Raw Scopus export loaded                                                                                        |
+| 1_col_standardize                 |            12505 |         0 |           12505 | Column names cleaned                                                                                            |
+| 2_exact_dedup                     |            12505 |         0 |           12505 | Exact row duplicates removed                                                                                    |
+| 3_doi_dedup                       |            12505 |         6 |           12499 | DOI-based duplicates removed                                                                                    |
+| 4_title_dedup                     |            12499 |        10 |           12489 | Exact normalized title + year + first-author match; incomplete keys retained; distinct non-empty DOIs preserved |
+| 5_missing_metadata                |            12489 |        21 |           12468 | Records missing ['Title', 'Year', 'Source title'] removed                                                       |
+| 6_thematic_screen                 |            12468 |      2562 |            9906 | XR signal in Title, Abstract, or Author Keywords                                                                |
+| 7_year_filter                     |             9906 |        65 |            9841 | Publication year window 1991–2025 (inclusive)                                                                   |
+| 8_education_eligibility_algorithm |             9841 |       300 |            9541 | Binary deterministic title + abstract + author-keyword lexical rule; see A11 trace and algorithm specification  |
+| 9_classification_eligibility      |             9541 |         6 |            9535 | Records assigned to one canonical technology category                                                           |

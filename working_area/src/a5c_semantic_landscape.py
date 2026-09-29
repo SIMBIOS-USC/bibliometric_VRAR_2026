@@ -1,25 +1,7 @@
-"""
-src/a5c_semantic_landscape.py
-==============================
-Analysis Module 5c: Bibliometric Semantic Landscape
------------------------------------------------------
-Port of Analysis_5_Semantic_Breakdown.py (HUGO_CORRECTIONS reference).
+"""Summarize common author keywords overall and by technology category.
 
-Key decisions (from original script):
-  - Canonical cleaned corpus from the master pipeline
-  - One shared technology classification across all modules
-  - MANUAL_MAP: 'simulation' → 'simulation' (NOT 'simulations' — semantic version)
-  - Global fuzzy_map built from ALL classified papers
-  - Global panel (top) uses ALL classified papers
-  - Per-category panels (bottom) use same fuzzy_map but each category subset
-  - Figure: 16.54 × 11.69 in (A4 landscape), height_ratios=[1.3, 1.0], wspace=0.85
-  - Colors: GLOBAL=#1a1a2e, VR=#4a90d9, AR=#e8773a, MR=#3ab795, Hybrid=#9b59b6
-  - Title loc='left' per panel, suptitle y=1.01
-
-Output:
-  - fig_A5c_semantic_landscape.png
-  - table_A5c_global_keywords.csv
-  - table_A5c_category_keywords.csv
+A fuzzy normalization map is built from the full corpus and reused in each
+category panel. The output includes the top ten terms for each group.
 """
 
 from __future__ import annotations
@@ -34,7 +16,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-# ── Keyword normalisation (EXACT copy from Analysis_5_Semantic_Breakdown.py)
+# Keyword normalization rules
 MANUAL_MAP = {
     'virtual reality (vr)':   'virtual reality',
     'vr':                     'virtual reality',
@@ -50,10 +32,10 @@ MANUAL_MAP = {
     'xr':                     'extended reality',
     'computer aided instruction': 'computer-aided instruction',
     'learning system':        'learning systems',
-    'simulation':             'simulation',   # NOTE: stays 'simulation' (semantic version)
+    'simulation':             'simulation',
 }
 
-# ── Colours (exact from original script) ─────────────────────────────────────
+# Figure colors
 GLOBAL_COLOR = '#1a1a2e'
 VR_COLOR     = '#4a90d9'
 AR_COLOR     = '#e8773a'
@@ -122,8 +104,7 @@ def _count_from_papers(cleaned_papers: list[list[str]],
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-def run(df_classified: pd.DataFrame, results_dir: Path,
-        raw_csv: Path | None = None) -> None:
+def run(df_classified: pd.DataFrame, results_dir: Path) -> None:
     """
     Execute the Bibliometric Semantic Landscape figure.
 
@@ -133,14 +114,13 @@ def run(df_classified: pd.DataFrame, results_dir: Path,
     ----------
     df_classified : pd.DataFrame  — canonical corpus with Tech_Category
     results_dir   : Path          — output directory
-    raw_csv       : Path | None   — retained for backwards compatibility
     """
     print("\n[A5c] Bibliometric Semantic Landscape")
     print("-" * 50)
     results_dir.mkdir(parents=True, exist_ok=True)
 
     if "Tech_Category" not in df_classified.columns:
-        print("  [ERROR] Canonical Tech_Category column not found.")
+        print("  [ERROR] Tech_Category column not found.")
         return
     df_cl = df_classified[df_classified['Tech_Category'].notna()].copy()
     df_cl['Tech'] = df_cl['Tech_Category']
@@ -179,7 +159,7 @@ def run(df_classified: pd.DataFrame, results_dir: Path,
         results_dir / "table_A5c_category_keywords.csv", index=False)
 
     # ─────────────────────────────────────────────────────────────────────────
-    # FIGURE — exact replication of Analysis_5_Semantic_Breakdown.py
+    # Overall and category keyword panels.
     # ─────────────────────────────────────────────────────────────────────────
     plt.rcParams.update({
         'font.family': 'DejaVu Sans',

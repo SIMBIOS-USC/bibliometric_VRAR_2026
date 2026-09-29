@@ -1,22 +1,8 @@
-"""
-src/a5b_keyword_cooccurrence.py
-================================
-Analysis Module 5b: Keyword Co-occurrence Matrix
--------------------------------------------------
-Port of Analysis_5_Cooccurrence_Matrix.py (HUGO_CORRECTIONS reference).
+"""Count keyword co-occurrence in the classified corpus.
 
-Key decisions:
-  - Uses the canonical cleaned corpus from the master pipeline
-  - Technology labels are inherited from `utils/classifier.py`
-  - MANUAL_MAP: 'simulation' → 'simulations'
-  - Fuzzy matching (thefuzz, ratio ≥ 90)
-  - Diagonal = self-frequency; off-diagonal = co-occurrence count
-  - Seaborn heatmap, cmap='YlGnBu', annot bold size 14
-  - Figure: 14×12 inches, fontsize 22 title
-
-Output:
-  - fig_A5b_keyword_cooccurrence.png
-  - table_A5b_cooccurrence_matrix.csv
+The matrix diagonal contains keyword document frequencies; off-diagonal cells
+count documents containing both terms. Manual normalization is followed by
+fuzzy matching among the 200 most common terms (similarity threshold 90).
 """
 
 from __future__ import annotations
@@ -33,7 +19,7 @@ import seaborn as sns
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from utils.plot_style import save_figure
 
-# ── Keyword normalisation map (EXACT copy from Analysis_5_Cooccurrence_Matrix.py)
+# Keyword normalization rules
 MANUAL_MAP = {
     'virtual reality (vr)':   'virtual reality',
     'vr':                     'virtual reality',
@@ -49,7 +35,7 @@ MANUAL_MAP = {
     'xr':                     'extended reality',
     'computer aided instruction': 'computer-aided instruction',
     'learning system':        'learning systems',
-    'simulation':             'simulations',   # NOTE: 'simulations' here (cooccurrence version)
+    'simulation':             'simulations',
 }
 
 
@@ -105,8 +91,7 @@ def _clean_papers_kws(raw_papers: list[list[str]],
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-def run(df_classified: pd.DataFrame, results_dir: Path,
-        raw_csv: Path | None = None) -> None:
+def run(df_classified: pd.DataFrame, results_dir: Path) -> None:
     """
     Execute the Keyword Co-occurrence Matrix figure on the canonical corpus.
 
@@ -114,14 +99,13 @@ def run(df_classified: pd.DataFrame, results_dir: Path,
     ----------
     df_classified : pd.DataFrame  — canonical corpus with Tech_Category
     results_dir   : Path          — output directory
-    raw_csv       : Path | None   — retained for backwards compatibility
     """
     print("\n[A5b] Keyword Co-occurrence Matrix")
     print("-" * 50)
     results_dir.mkdir(parents=True, exist_ok=True)
 
     if "Tech_Category" not in df_classified.columns:
-        print("  [ERROR] Canonical Tech_Category column not found.")
+        print("  [ERROR] Tech_Category column not found.")
         return
     df_cl = df_classified[df_classified['Tech_Category'].notna()].copy()
     df_cl['Tech'] = df_cl['Tech_Category']
@@ -162,7 +146,7 @@ def run(df_classified: pd.DataFrame, results_dir: Path,
     cooccurrence_df.to_csv(results_dir / "table_A5b_cooccurrence_matrix.csv")
     print(f"  → Saved: {results_dir / 'table_A5b_cooccurrence_matrix.csv'}")
 
-    # ── FIGURE (exact replication of Analysis_5_Cooccurrence_Matrix.py) ───────
+    # Plot the keyword co-occurrence matrix.
     plt.figure(figsize=(14, 12), facecolor='white')
     ax = sns.heatmap(
         cooccurrence_df,

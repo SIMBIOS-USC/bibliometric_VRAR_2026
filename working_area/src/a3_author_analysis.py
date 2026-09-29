@@ -15,9 +15,11 @@ Output files (saved to results/):
 
 Methodology:
   For each author, metrics are computed within each technology category using
-  the canonical classify_technology() function. An author is assigned to the
-  category where they have the most publications. Affiliation is determined
-  by majority vote across all papers where the author appears.
+  the category labels already assigned by the canonical corpus pipeline.
+  Authors may therefore appear in more than one category. The displayed
+  affiliation is estimated by majority vote over the first affiliation listed
+  on records where the author appears; Scopus does not provide an author-to-
+  affiliation link in the fields used here.
 """
 
 from __future__ import annotations
@@ -52,7 +54,8 @@ INSTITUTION_MAPPINGS: dict[str, str] = {
     "massachusetts institute": "MIT (USA)",
     "johns hopkins": "Johns Hopkins (USA)",
     "mayo clinic": "Mayo Clinic (USA)",
-    "college london": "UCL (UK)",
+    # Keep this specific: "college london" also matches Imperial College London.
+    "university college london": "UCL (UK)",
     "imperial college": "Imperial College (UK)",
     "oxford": "Univ. of Oxford (UK)",
     "cambridge": "Univ. of Cambridge (UK)",

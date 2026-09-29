@@ -1,37 +1,10 @@
-"""
-utils/classifier.py
-===================
-CANONICAL Technology Classifier for XR Bibliometric Analysis.
+"""Keyword rules for technology categories and research orientation.
 
-This module defines the SINGLE authoritative classification function used
-across ALL analyses in this project. Having one canonical classifier solves
-the methodological inconsistency flagged in the peer-review (Reviewer Issue #2):
-different scripts were using different keyword dictionaries and different field
-combinations, meaning figures could be classifying articles with subtly different rules.
-
-Classification Scheme (aligned with the manuscript):
-------------------------------------------------------
-  VR   – Virtual Reality only (no AR or MR/XR signals)
-  AR   – Augmented Reality only (no VR or MR/XR signals)
-  MR/XR – Mixed/Extended Reality (any MR/XR term present)
-  Hybrid/Multi-technology – co-mention of VR + AR without MR/XR terms
-          (this is the definition from the manuscript, NOT "VR+AR → MR/XR"
-           which was the bug in paper_clasificados.py and institutions_and_journals.py)
-
-Fields searched (applied consistently across ALL modules):
-  Title + Abstract + Author Keywords + Index Keywords
-
-Note on "immersive":
-  "immersive" alone is NOT treated as a VR signal because it can appear in
-  "immersive learning" or "immersive education" contexts unrelated to VR hardware.
-  Explicit VR terms such as "virtual reality" are sufficient; hardware is not
-  required when the technology itself is named.
-
-Note on MR/XR grouping:
-  Mixed Reality and Extended Reality are grouped under one terminological category
-  because they overlap heavily in the corpus. This is a data-driven decision,
-  NOT a claim that MR and XR are conceptually equivalent. The manuscript should
-  state this explicitly.
+Technology labels use the title, abstract, author keywords, and Index Keywords.
+MR/XR takes priority; otherwise a record mentioning both VR and AR is labelled
+Hybrid/Multi-technology. The single word "immersive" is not a VR signal.
+Mixed Reality and Extended Reality share a label here; that is a coding choice,
+not a claim that the terms mean the same thing.
 """
 
 from __future__ import annotations
@@ -41,8 +14,7 @@ import pandas as pd
 # ---------------------------------------------------------------------------
 # 1. KEYWORD DICTIONARIES
 # ---------------------------------------------------------------------------
-# These are the CANONICAL term sets. Do NOT add terms here without updating
-# the methodology section of the manuscript accordingly.
+# Keep these lists in step with the methods description.
 
 VR_TERMS: list[str] = [
     "virtual reality",
@@ -247,23 +219,11 @@ def classify_technology(row: pd.Series) -> str | None:
         Returns None if the record should be excluded (non-XR noise) or
         cannot be classified into any category.
 
-    Classification Logic (manuscript-aligned):
-    ------------------------------------------
-    Priority 1 (EXCLUSION): If EXCLUSION_TERMS found AND no explicit technology
-                             term from any category → return None
-    Priority 2 (MR/XR):     If any MR_XR_TERMS found → 'MR/XR'
-    Priority 3 (Hybrid):    If VR_TERMS AND AR_TERMS both found (but NOT MR/XR)
-                             → 'Hybrid/Multi-technology'
-                (Manuscript definition: co-mention of VR+AR without explicit MR/XR)
-    Priority 4 (AR):        If only AR_TERMS found → 'AR'
-    Priority 5 (VR):        If only VR_TERMS found → 'VR'
-    Default:                 None (unclassifiable)
-
-    Note: The original bug in paper_clasificados.py and institutions_and_journals.py
-    was that VR+AR was classified as 'Mixed/Extended Reality' instead of
-    'Hybrid/Multi-technology'. This function implements the CORRECT manuscript logic.
+    MR/XR takes priority over the other categories. Without an MR/XR signal,
+    records with both VR and AR signals are labelled Hybrid/Multi-technology.
+    Exclusion phrases suppress a record only when no technology signal matches.
     """
-    # Build combined text from canonical fields
+    # Combine the fields used for classification.
     parts = []
     for field in CLASSIFICATION_FIELDS:
         val = row.get(field, "")

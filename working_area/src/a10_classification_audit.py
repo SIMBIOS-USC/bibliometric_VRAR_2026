@@ -1,8 +1,8 @@
 """Record-level decision trace and human validation worksheet.
 
 This module documents what the deterministic keyword rules matched. It cannot
-estimate intercoder agreement: the worksheet must be independently coded by
-two human reviewers before kappa or validation claims can be made.
+estimate intercoder agreement: two independent raters must code the worksheet
+before kappa or validation claims can be made.
 """
 
 from __future__ import annotations

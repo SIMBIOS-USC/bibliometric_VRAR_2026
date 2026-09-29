@@ -1,15 +1,13 @@
 """
 src/a7_keywords_comparison.py
 ==============================
-Analysis Module 7: Author vs Index Keywords Comparison
+Analysis Module 7: Author vs Index Keyword Frequencies
 ------------------------------------------------------
-Generates a comparative table between top Author Keywords and 
-top Index Keywords to address Reviewer 2's comment about the 
-medical/clinical dominance in the dataset.
+Generates a comparative table of the most frequent Author Keywords and Index
+Keywords in the canonical analytical corpus.
 
-Frequencies are computed from the canonical cleaned corpus, so this table is
-consistent with every other reported analysis.
-- Index Keywords ('human' + 'humans' mapped to 'humans' to reach 7638).
+Author keywords use the module's manual and fuzzy normalization rules. Index
+keywords use the manual normalization defined below.
 
 Output:
   - table_A7_keywords_comparison.csv
@@ -43,7 +41,7 @@ MANUAL_MAP_AUTHOR = {
     'simulation':             'simulations',
 }
 
-# Normalisation for Index Keywords (to match paper exactly)
+# Index keyword normalization
 MANUAL_MAP_INDEX = {
     'human': 'humans',
 }
@@ -68,12 +66,12 @@ def extract_index_kws(df: pd.DataFrame) -> list:
             kws_list.append(k1)
     return kws_list
 
-def run(df_classified: pd.DataFrame, results_dir: Path, raw_csv: Path | None = None) -> None:
+def run(df_classified: pd.DataFrame, results_dir: Path) -> None:
     print("\n[A7] Author vs Index Keywords Comparison")
     print("-" * 50)
     
     if "Tech_Category" not in df_classified.columns:
-        print("  [ERROR] Canonical Tech_Category column not found.")
+        print("  [ERROR] Tech_Category column not found.")
         return
     df_cl = df_classified[df_classified['Tech_Category'].notna()].copy()
     df_cl['Tech'] = df_cl['Tech_Category']

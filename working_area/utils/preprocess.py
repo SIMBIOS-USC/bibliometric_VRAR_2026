@@ -192,7 +192,9 @@ def _stage4_title_deduplication(df: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
       - "Virtual Reality in Education" vs "Virtual reality in education."
 
     This is exact matching after normalization, not fuzzy similarity matching.
-    Empty titles are retained here so Stage 5 reports them as missing metadata.
+    Rows without a usable title, year, or first-author key are retained here:
+    without all three fields there is not enough evidence to call two records
+    title duplicates. Stage 5 later reports missing essential metadata.
     """
     n_before = len(df)
     if "Title" in df.columns:
@@ -223,7 +225,14 @@ def _stage4_title_deduplication(df: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
         ).sum(axis=1)
         keys = ["_title_norm", "_year_key", "_first_author_key"]
         keep = []
-        candidates = df[df["_title_norm"].ne("")]
+        # Do not treat two missing author/year values as evidence that records
+        # are duplicates. Only compare rows with a complete matching key.
+        candidate_mask = (
+            df["_title_norm"].ne("")
+            & df["_year_key"].ge(0)
+            & df["_first_author_key"].ne("")
+        )
+        candidates = df[candidate_mask]
         for _, group in candidates.groupby(keys, sort=False, dropna=False):
             nonempty_dois = set(group.loc[group["_doi_key"].ne(""), "_doi_key"])
             if len(group) == 1:
@@ -239,15 +248,15 @@ def _stage4_title_deduplication(df: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
                     keep.append(no_doi.sort_values("_quality", ascending=False, kind="stable").index[0])
             else:
                 keep.append(group.sort_values("_quality", ascending=False, kind="stable").index[0])
-        untitled = df[df["_title_norm"].eq("")]
-        df = pd.concat([df.loc[keep], untitled], axis=0).sort_index()
+        not_comparable = df[~candidate_mask]
+        df = pd.concat([df.loc[keep], not_comparable], axis=0).sort_index()
         df = df.drop(columns=["_title_norm", "_year_key", "_first_author_key", "_doi_key", "_quality"])
     n_after = len(df)
     return df.reset_index(drop=True), {
         "stage": "4_title_dedup",
         "records": n_after,
         "dropped": n_before - n_after,
-        "note": "Exact normalized title + year + first-author match; distinct non-empty DOIs preserved",
+        "note": "Exact normalized title + year + first-author match; incomplete keys retained; distinct non-empty DOIs preserved",
     }
 
 

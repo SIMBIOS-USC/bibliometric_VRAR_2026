@@ -1,4 +1,4 @@
-"""Additional manuscript-ready tables and figures.
+"""Additional tables and figures from the classified corpus.
 
 All outputs are computed from the canonical classified corpus.  Journal
 metrics that are not present in the Scopus export are deliberately reported

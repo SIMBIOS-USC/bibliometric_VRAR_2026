@@ -14,7 +14,7 @@ ALIASES = {
         "massachusetts institute of technology", "massachusetts institute"
     ),
     "Imperial College London": ("imperial college london",),
-    # Requested consolidation of the Danish university / Copenhagen hospital variants.
+    # Scopus uses several names for the University of Copenhagen.
     "Københavns Universitet": (
         "københavns universitet", "university of copenhagen",
         "copenhagen university hospital"
@@ -82,8 +82,7 @@ def institution_items(value: object) -> list[str]:
             found.add(matched)
             continue
         parts = [part.strip() for part in segment.split(",") if part.strip()]
-        # Scopus may export the city name without the university name. This
-        # explicit fallback is retained for the user's requested Copenhagen merge.
+        # Some Copenhagen addresses contain the city but omit the university.
         if parts and parts[0].lower() in {"københavn", "copenhagen"}:
             found.add("Københavns Universitet")
             continue

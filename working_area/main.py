@@ -1,94 +1,13 @@
-"""
-main.py
-=======
-XR Bibliometrics Analysis Pipeline — Master Orchestrator
-=========================================================
+"""Run the XR bibliometric corpus-construction and analysis pipeline.
 
-Project structure
------------------
-xr_bibliometrics/
-├── scopus_raw.csv              ← Raw Scopus export (INPUT — do not modify)
-├── results/                    ← All figures and tables (OUTPUT)
-│   ├── pipeline_report.csv     ← Stage-by-stage record counts (audit trail)
-│   ├── classified_corpus.csv   ← Cleaned & classified full dataset
-│   ├── fig_A1_*.png / table_A1_*.csv  ← Publication growth analysis
-│   ├── fig_A2_*.png / table_A2_*.csv  ← Orientation analysis
-│   ├── fig_A3_*.png / table_A3_*.csv  ← Author analysis
-│   ├── fig_A4_*.png / table_A4_*.csv  ← Country collaboration
-│   ├── fig_A5_*.png / table_A5_*.csv  ← Bradford zones
-│   └── table_A6_*.csv / .md           ← Main bibliometric table
-└── working_area/
-    ├── main.py                 ← THIS FILE
-    ├── utils/
-    │   ├── classifier.py       ← CANONICAL technology + orientation classifiers
-    │   ├── preprocess.py       ← Scopus cleaning pipeline
-    │   └── plot_style.py       ← Shared Matplotlib style
-    └── src/
-        ├── a1_publication_growth.py
-        ├── a2_orientation_analysis.py
-        ├── a3_author_analysis.py
-        ├── a4_country_collaboration.py
-        ├── a5_bradford_zones.py
-        └── a6_bibliometric_table.py
+Usage from the repository root::
 
-Reviewer issues addressed
--------------------------
-Issue 1 — Classification inconsistency (VR+AR → MR/XR bug):
-    ALL modules now call utils/classifier.classify_technology().
-    The canonical function implements the MANUSCRIPT definition:
-      VR+AR without MR/XR terms → 'Hybrid/Multi-technology'  (NOT 'MR/XR')
+    python working_area/main.py [--input PATH] [--results-dir PATH]
+                                 [--skip MODULES]
 
-Issue 2 — No single canonical classifier:
-    utils/classifier.py is the single source of truth.
-    Keyword dictionaries, field combinations, and priority logic are
-    defined ONCE and imported by all modules.
-
-Issue 3 — Missing technical vs pedagogical classifier:
-    utils/classifier.classify_orientation() now implements this.
-    Module a2_orientation_analysis.py uses it to reproduce Figure 2 / RQ4.
-
-Issue 4 — Incomplete deduplication pipeline:
-    utils/preprocess.run_pipeline() implements all stages:
-      Stage 0: Raw load
-      Stage 1: Column normalization
-      Stage 2: Exact duplicate removal
-      Stage 3: DOI-based deduplication
-      Stage 4: Exact normalized-title deduplication (non-empty titles)
-      Stage 5: Essential metadata filter
-      Stage 6: Thematic screening
-      Stage 7: Year-window filter
-    The full stage-by-stage count is saved to results/pipeline_report.csv.
-
-Issue 5 — Reproducibility claims without a master workflow:
-    THIS FILE is the master workflow. Running `python main.py` reproduces
-    all analyses in a single call. All outputs go to results/.
-
-Issue 6 — 'immersive' alone triggering VR:
-    'immersive' is intentionally excluded from VR_TERMS in classifier.py.
-    Explicit VR terms trigger VR; hardware is not required when technology is named.
-
-Issue 7 — MR/XR terminological mixing:
-    The keyword dictionary in classifier.py is explicit and documented.
-    'metaverse', 'digital twin', 'passthrough' are intentionally excluded.
-    The grouping is terminological (not ontological), as stated in the manuscript.
-
-Usage
------
-    python main.py [--input PATH] [--results-dir PATH] [--skip MODULES]
-
-    Defaults:
-      --input       ../scopus_raw.csv
-      --results-dir ../../results
-      --skip        (none)
-
-    Examples:
-      python main.py
-      python main.py --input /path/to/custom.csv
-      python main.py --skip a3,a5          # skip author and bradford analyses
-
-Dependencies
-------------
-    pip install pandas numpy matplotlib seaborn tabulate
+The default input is ``scopus_raw.csv`` and the default output directory is
+``results/``. Corpus construction and its audit steps always run; ``--skip``
+applies only to the optional analysis modules.
 """
 
 from __future__ import annotations
@@ -132,6 +51,9 @@ import src.a11_education_eligibility as a11
 # ---------------------------------------------------------------------------
 DEFAULT_INPUT = _HERE.parent / "scopus_raw.csv"
 DEFAULT_RESULTS = _HERE.parent / "results"
+SKIPPABLE_MODULE_IDS = {
+    "a1", "a2b", "a3", "a4", "a4b", "a5", "a5b", "a5c", "a6", "a7", "a8", "a9",
+}
 
 
 # ---------------------------------------------------------------------------
@@ -160,10 +82,15 @@ def _parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--skip", type=str, default="",
-        help="Comma-separated module IDs to skip (e.g. 'a3,a5'). "
-             "Valid IDs: a1, a2b, a3, a4, a4b, a5, a5b, a5c, a6, a7, a8, a9, a10",
+        help="Comma-separated analysis module IDs to skip (e.g. 'a3,a5'). "
+             "Valid IDs: " + ", ".join(sorted(SKIPPABLE_MODULE_IDS)),
     )
-    return parser.parse_args()
+    args = parser.parse_args()
+    requested = {s.strip().lower() for s in args.skip.split(",") if s.strip()}
+    unknown = requested - SKIPPABLE_MODULE_IDS
+    if unknown:
+        parser.error(f"unknown --skip module ID(s): {', '.join(sorted(unknown))}")
+    return args
 
 
 # ---------------------------------------------------------------------------
@@ -248,29 +175,26 @@ def main() -> None:
         ("a2b", "Tech & Ped + Hardware Triggers (4-panel)",               a2b.run),
         ("a3",  "Top Author Analysis",                                    a3.run),
         ("a4",  "Country Collaboration (SCP vs MCP)",                     a4.run),
-        ("a4b", "SCP/MCP Canonical Figures (braces + pie)",              a4b.run),
+        ("a4b", "SCP/MCP Figures",                                      a4b.run),
         ("a5",  "Bradford's Law & Source Analysis",                       a5.run),
         ("a5b", "Keyword Co-occurrence Matrix (Top 10)",                  a5b.run),
         ("a5c", "Bibliometric Semantic Landscape",                        a5c.run),
         ("a6",  "Main Bibliometric Information Table",                    a6.run),
         ("a7",  "Author vs Index Keywords Comparison",                    a7.run),
         ("a8",  "Network Graphs (Keywords & Authors)",                    a8.run),
-        ("a9",  "Additional Manuscript Tables & Figures",                  a9.run),
+        ("a9",  "Additional Tables & Figures",                             a9.run),
     ]
 
+    module_failures: list[tuple[str, str]] = []
     for module_id, module_name, module_fn in modules:
         if module_id in skip_modules:
             print(f"\n  [SKIP] {module_id.upper()} — {module_name}")
             continue
         try:
-            # raw_csv is retained only for backwards-compatible function
-            # signatures; all modules consume the canonical corpus.
-            if module_id in ("a4b", "a5b", "a5c", "a7"):
-                module_fn(df_classified, results_dir, raw_csv=input_path)
-            else:
-                module_fn(df_classified, results_dir)
+            module_fn(df_classified, results_dir)
         except Exception as exc:
             print(f"\n  [ERROR] Module {module_id.upper()} failed: {exc}")
+            module_failures.append((module_id, str(exc)))
             import traceback
             traceback.print_exc()
 
@@ -278,6 +202,13 @@ def main() -> None:
     # DONE
     # -----------------------------------------------------------------------
     elapsed = time.time() - t_start
+    if module_failures:
+        _banner(f"ANALYSIS RUN FAILED  ({elapsed:.1f}s)")
+        for module_id, message in module_failures:
+            print(f"  {module_id.upper()}: {message}")
+        print(f"  Partial results may be present in: {results_dir}\n")
+        sys.exit(1)
+
     _banner(f"ALL ANALYSES COMPLETE  ({elapsed:.1f}s)")
     print(f"  Results saved to: {results_dir}\n")
 
