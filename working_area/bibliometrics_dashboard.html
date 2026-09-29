@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>XR Bibliometrics Dashboard</title>
+<meta name="description" content="Upload a Scopus CSV and instantly generate all XR bibliometric figures."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+<style>
+:root{--bg:#0d1117;--surface:#161b22;--surface2:#21262d;--border:#30363d;--accent:#58a6ff;--accent2:#3fb950;--warn:#f85149;--text:#e6edf3;--text-muted:#8b949e;--radius:12px;--radius-lg:18px;--shadow:0 8px 32px rgba(0,0,0,.45);}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.6;}
+header{background:linear-gradient(135deg,#0d1117 0%,#161b22 50%,#0d2137 100%);border-bottom:1px solid var(--border);padding:1.5rem 2.5rem;position:sticky;top:0;z-index:100;}
+.header-inner{max-width:1400px;margin:0 auto;display:flex;align-items:center;gap:1.2rem;}
+.logo{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;}
+header h1{font-size:1.4rem;font-weight:800;letter-spacing:-.5px;}
+header p{font-size:.85rem;color:var(--text-muted);margin-top:.15rem;}
+.badge{margin-left:auto;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:.3rem .8rem;font-size:.75rem;color:var(--text-muted);white-space:nowrap;}
+main{max-width:1400px;margin:0 auto;padding:2rem 2rem 4rem;}
+.upload-zone{border:2px dashed var(--border);border-radius:var(--radius-lg);padding:3.5rem 2rem;text-align:center;cursor:pointer;transition:all .25s;background:var(--surface);position:relative;overflow:hidden;}
+.upload-zone:hover,.upload-zone.drag-over{border-color:var(--accent);background:rgba(88,166,255,.04);transform:translateY(-2px);box-shadow:0 0 0 4px rgba(88,166,255,.12);}
+.upload-icon{font-size:3rem;margin-bottom:1rem;display:block;}
+.upload-zone h2{font-size:1.25rem;font-weight:700;margin-bottom:.5rem;}
+.upload-zone p{color:var(--text-muted);font-size:.9rem;}
+#fileInput{display:none;}
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.6rem 1.4rem;border-radius:8px;border:none;font-family:inherit;font-size:.9rem;font-weight:600;cursor:pointer;transition:all .2s;}
+.btn-primary{background:var(--accent);color:#0d1117;}
+.btn-primary:hover{background:#79beff;transform:translateY(-1px);}
+.btn-sm{padding:.4rem .9rem;font-size:.8rem;}
+#pipeline-status{display:none;}
+.steps-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.75rem;margin:1.5rem 0;}
+.step{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;display:flex;flex-direction:column;gap:.3rem;transition:all .3s;}
+.step.done{border-color:var(--accent2);}
+.step.error{border-color:var(--warn);}
+.step-icon{font-size:1.4rem;}
+.step-label{font-size:.78rem;color:var(--text-muted);}
+.step-count{font-size:1.1rem;font-weight:700;font-family:'JetBrains Mono',monospace;}
+.step-delta{font-size:.75rem;color:var(--warn);font-family:'JetBrains Mono',monospace;}
+.step.done .step-delta{color:var(--accent2);}
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.9rem;margin:2rem 0;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.2rem 1.1rem;transition:transform .2s,box-shadow .2s;}
+.card:hover{transform:translateY(-3px);box-shadow:var(--shadow);}
+.card-label{font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:.4rem;}
+.card-value{font-size:1.9rem;font-weight:800;font-family:'JetBrains Mono',monospace;}
+.card-sub{font-size:.8rem;color:var(--text-muted);margin-top:.2rem;}
+.card.vr{border-top:3px solid #e53935;}
+.card.ar{border-top:3px solid #1e88e5;}
+.card.mr{border-top:3px solid #43a047;}
+.card.hyb{border-top:3px solid #8e24aa;}
+.card.all{border-top:3px solid var(--accent);}
+.section-title{font-size:1.1rem;font-weight:700;margin:2.5rem 0 1rem;padding-bottom:.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:.6rem;}
+.section-num{background:var(--accent);color:#0d1117;border-radius:6px;padding:.1rem .5rem;font-size:.8rem;font-weight:700;}
+.chart-grid{display:grid;gap:1.2rem;}
+.chart-grid-2{grid-template-columns:1fr 1fr;}
+@media(max-width:900px){.chart-grid-2{grid-template-columns:1fr;}}
+.chart-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;transition:box-shadow .2s;}
+.chart-panel:hover{box-shadow:var(--shadow);}
+.chart-header{padding:1rem 1.3rem .6rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.chart-header h3{font-size:.95rem;font-weight:700;}
+.chart-body{padding:.5rem;}
+.pipeline-table{width:100%;border-collapse:collapse;font-size:.85rem;margin-top:.5rem;}
+.pipeline-table th{background:var(--surface2);color:var(--text-muted);text-align:left;padding:.5rem .8rem;font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;}
+.pipeline-table td{padding:.5rem .8rem;border-top:1px solid var(--border);}
+.pipeline-table tr:hover td{background:var(--surface2);}
+.mono{font-family:'JetBrains Mono',monospace;font-size:.82rem;}
+.tag{display:inline-block;padding:.1rem .5rem;border-radius:20px;font-size:.72rem;font-weight:600;}
+.tag-green{background:rgba(63,185,80,.15);color:var(--accent2);}
+.tag-red{background:rgba(248,81,73,.15);color:var(--warn);}
+footer{text-align:center;padding:2rem;color:var(--text-muted);font-size:.8rem;border-top:1px solid var(--border);}
+.alert{border-radius:var(--radius);padding:.9rem 1.1rem;font-size:.88rem;margin:1rem 0;display:flex;align-items:flex-start;gap:.7rem;}
+.alert-warn{background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);color:#ffa198;}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div class="logo">🔬</div>
+    <div>
+      <h1>XR Bibliometrics Dashboard</h1>
+      <p>Upload any Scopus CSV &rarr; auto-clean &rarr; classify &rarr; visualise</p>
+    </div>
+    <span class="badge">100% client-side &middot; no server needed</span>
+  </div>
+</header>
+
+<main>
+  <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+    <span class="upload-icon">📂</span>
+    <h2>Drop your Scopus CSV here</h2>
+    <p>or click to browse &middot; detects common bibliographic column names automatically</p>
+    <br/>
+    <button class="btn btn-primary" onclick="event.stopPropagation();document.getElementById('fileInput').click()">
+      📁 Choose File
+    </button>
+    <input type="file" id="fileInput" accept=".csv"/>
+    <p id="fileNameDisplay" style="margin-top:1rem;color:var(--accent);font-weight:600;"></p>
+  </div>
+
+  <div id="pipeline-status">
+    <div class="section-title"><span class="section-num">→</span> Data Cleaning Pipeline</div>
+    <div class="steps-grid" id="stepsGrid"></div>
+    <div id="pipelineTableWrap" style="display:none;">
+      <table class="pipeline-table">
+        <thead><tr><th>Stage</th><th>Records</th><th>Dropped</th><th>Note</th></tr></thead>
+        <tbody id="pipelineTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="dashboard" style="display:none;">
+    <div class="section-title"><span class="section-num">Σ</span> Corpus Overview</div>
+    <div class="summary-grid" id="summaryCards"></div>
+
+    <div class="section-title"><span class="section-num">A1</span> Publication Growth &amp; Citation Evolution</div>
+    <div class="chart-grid chart-grid-2">
+      <div class="chart-panel"><div class="chart-header"><h3>Annual Publications by Category</h3></div><div class="chart-body"><div id="chartPubGrowth" style="height:380px;"></div></div></div>
+      <div class="chart-panel"><div class="chart-header"><h3>Cumulative Publications</h3></div><div class="chart-body"><div id="chartCumulative" style="height:380px;"></div></div></div>
+    </div>
+
+    <div class="section-title"><span class="section-num">A2</span> Technical vs Pedagogical Orientation</div>
+    <div class="chart-grid chart-grid-2">
+      <div class="chart-panel"><div class="chart-header"><h3>Trend per category</h3></div><div class="chart-body"><div id="chartOriTrend" style="height:420px;"></div></div></div>
+      <div class="chart-panel"><div class="chart-header"><h3>Stacked bar by category</h3></div><div class="chart-body"><div id="chartOriStack" style="height:420px;"></div></div></div>
+    </div>
+
+    <div class="section-title"><span class="section-num">A2b</span> Technical &amp; Pedagogical + Hardware Triggers</div>
+    <div class="chart-panel"><div class="chart-header"><h3>4-panel: publications per year with hardware milestones</h3></div><div class="chart-body"><div id="chartHardware" style="height:900px;"></div></div></div>
+
+    <div class="section-title"><span class="section-num">A4</span> Domestic (SCP) vs International (MCP)</div>
+    <div class="chart-grid chart-grid-2">
+      <div class="chart-panel"><div class="chart-header"><h3>Top Countries — SCP vs MCP</h3></div><div class="chart-body"><div id="chartSCPMCP" style="height:440px;"></div></div></div>
+      <div class="chart-panel"><div class="chart-header"><h3>Global SCP / MCP ratio</h3></div><div class="chart-body"><div id="chartSCPPie" style="height:440px;"></div></div></div>
+    </div>
+
+    <div class="section-title"><span class="section-num">A5</span> Bradford's Law — Source Concentration</div>
+    <div class="chart-grid chart-grid-2">
+      <div class="chart-panel"><div class="chart-header"><h3>Bradford Zones</h3></div><div class="chart-body"><div id="chartBradford" style="height:380px;"></div></div></div>
+      <div class="chart-panel"><div class="chart-header"><h3>Top 15 Journals</h3></div><div class="chart-body"><div id="chartTopJournals" style="height:380px;"></div></div></div>
+    </div>
+
+    <div class="section-title"><span class="section-num">A5b</span> Keyword Co-occurrence Matrix</div>
+    <div class="chart-panel"><div class="chart-header"><h3>Author keyword co-occurrence (Top 10)</h3></div><div class="chart-body"><div id="chartCooccurrence" style="height:560px;"></div></div></div>
+
+    <div class="section-title"><span class="section-num">A6</span> Main Bibliometric Information</div>
+    <div class="chart-panel">
+      <div class="chart-header"><h3>Key metrics per technology category</h3><button class="btn btn-primary btn-sm" onclick="downloadTableCSV()">⬇ CSV</button></div>
+      <div class="chart-body" id="biblioTableWrap" style="overflow-x:auto;padding:1rem;"></div>
+    </div>
+  </div>
+</main>
+<footer>XR Bibliometrics Dashboard &middot; 100% client-side &middot; no installation required</footer>
+
+<script>
+'use strict';
+const CAT_ORDER=['VR','AR','MR/XR','Hybrid/Multi-technology'];
+const CAT_COLOR={'VR':'#e53935','AR':'#1e88e5','MR/XR':'#43a047','Hybrid/Multi-technology':'#8e24aa'};
+const CAT_LIGHT={'VR':'rgba(229,57,53,.22)','AR':'rgba(30,136,229,.22)','MR/XR':'rgba(67,160,71,.22)','Hybrid/Multi-technology':'rgba(142,36,170,.22)'};
+const TRIGGERS={'VR':[{y:2012,l:'Oculus Kickstarter'},{y:2015,l:'Samsung Gear VR'},{y:2016,l:'Oculus/Vive/PSVR'},{y:2019,l:'Meta Quest'},{y:2024,l:'Apple Vision Pro'}],'AR':[{y:2008,l:'HTC Dream'},{y:2012,l:'Oculus KS'},{y:2013,l:'Google Glass'},{y:2016,l:'Pokémon GO'},{y:2024,l:'Apple Vision Pro'}],'MR/XR':[{y:2012,l:'Oculus KS'},{y:2016,l:'HoloLens Dev'},{y:2024,l:'Apple Vision Pro'}],'Hybrid/Multi-technology':[]};
+const C_CANON={'united states':'USA','usa':'USA','u.s.a.':'USA','china':'China','p.r. china':'China','hong kong':'China','united kingdom':'UK','uk':'UK','england':'UK','spain':'Spain','taiwan':'Taiwan','south korea':'South Korea','korea':'South Korea','germany':'Germany','australia':'Australia','canada':'Canada','italy':'Italy','japan':'Japan','france':'France','india':'India','brazil':'Brazil','netherlands':'Netherlands','portugal':'Portugal','turkey':'Turkey','greece':'Greece','sweden':'Sweden','finland':'Finland','norway':'Norway','denmark':'Denmark','poland':'Poland','malaysia':'Malaysia','singapore':'Singapore','mexico':'Mexico','iran':'Iran','saudi arabia':'Saudi Arabia','new zealand':'New Zealand'};
+const KW_MAP={'virtual reality (vr)':'virtual reality','vr':'virtual reality','augmented reality (ar)':'augmented reality','ar':'augmented reality','elearning':'e-learning','e learning':'e-learning','electronic learning':'e-learning','student':'students','mixed reality (mr)':'mixed reality','mr':'mixed reality','extended reality (xr)':'extended reality','xr':'extended reality','computer aided instruction':'computer-aided instruction','learning system':'learning systems','simulation':'simulations'};
+const EXCL=['agent-mediated','multi-agent','auction','negotiation','market mechanism','mixed integer'];
+const ANCHOR=['hololens','magic leap','oculus','htc vive','head-mounted',' hmd '];
+const MR_T=['mixed reality','extended reality','spatial computing','hololens','magic leap',' xr ',' mr '];
+const AR_T=['augmented reality',' ar ','smart glasses',' hud ','mobile ar'];
+const VR_T=['virtual reality',' vr ','head-mounted display','hmd','oculus','htc vive','vive','cave system','360 video','360-degree video'];
+const PED=['learning outcome','learning gains','academic performance','knowledge acquisition','knowledge retention','pre-test','pretest','post-test','posttest','control group','experimental group','quasi-experiment','effect size','student engagement','student motivation','cognitive load','self-efficacy','anova','t-test','questionnaire','likert scale','bloom','constructivist','active learning','collaborative learning','problem-based','flipped classroom','learning analytics','usability study','significant improvement','significant difference'];
+const TECH=['algorithm','deep learning','neural network','machine learning','convolutional','object detection','tracking','rendering','real-time','latency','bandwidth','protocol','architecture','implementation','framework','system design','sensor fusion','point cloud','slam','odometry'];
+const STEP_DEFS=[{id:'s0',icon:'📥',label:'Raw load'},{id:'s1',icon:'🔤',label:'Column clean'},{id:'s2',icon:'🔁',label:'Exact dedup'},{id:'s3',icon:'🔗',label:'DOI dedup'},{id:'s4',icon:'📝',label:'Title dedup'},{id:'s5',icon:'🏷️',label:'Metadata filter'},{id:'s6',icon:'🎯',label:'Thematic screen'},{id:'s7',icon:'📅',label:'Year filter'},{id:'s8',icon:'🤖',label:'Classify'}];
+const DARK={plot_bgcolor:'#161b22',paper_bgcolor:'#161b22',font:{color:'#e6edf3',family:'Inter'},xaxis:{gridcolor:'#30363d'},yaxis:{gridcolor:'#30363d'}};
+let _df=[],_log=[];
+
+// Flexible column detection: Scopus, Dimensions, WoS and hand-built CSVs
+// frequently use different labels for the same bibliographic field.
+const FIELD_ALIASES={
+  Title:['title','document title','article title','paper title','ti'],
+  Abstract:['abstract','summary','description','ab'],
+  'Author Keywords':['author keywords','author keyword','keywords','keywords (author)','de'],
+  'Index Keywords':['index keywords','index keyword','keywords plus','id'],
+  Year:['year','publication year','pub year','py','date'],
+  DOI:['doi','digital object identifier'],
+  Affiliations:['affiliations','affiliation','author affiliations','c1'],
+  Authors:['authors','author','creator','au'],
+  'Source title':['source title','journal','journal title','publication name','so'],
+  'Cited by':['cited by','citations','times cited','tc']
+};
+function normalizeRows(rows){
+  return rows.map(raw=>{
+    const lookup={};Object.keys(raw||{}).forEach(k=>{lookup[k.trim().toLowerCase()]=k;});
+    const out={...raw};
+    Object.entries(FIELD_ALIASES).forEach(([canonical,aliases])=>{
+      if(out[canonical]!==undefined&&String(out[canonical]).trim()!=='')return;
+      const hit=aliases.map(a=>lookup[a]).find(Boolean);
+      if(hit)out[canonical]=raw[hit];
+    });
+    return out;
+  });
+}
+
+function ltc(aff){const r=(aff||'').split(',').pop().trim().toLowerCase().replace(/[.\s0-9]+$/,'');return C_CANON[r]||null;}
+function ctrySet(s){return[...new Set((s||'').split(';').map(a=>ltc(a)).filter(Boolean))];}
+function nkw(k){const t=k.trim().toLowerCase();return KW_MAP[t]||t;}
+function classT(row){
+  const t=`${row.Title||''} ${row.Abstract||''} ${row['Author Keywords']||''} ${row['Index Keywords']||''}`.toLowerCase();
+  if(EXCL.some(e=>t.includes(e))&&!ANCHOR.some(h=>t.includes(h)))return null;
+  const mr=MR_T.some(x=>t.includes(x)),ar=AR_T.some(x=>t.includes(x)),vr=VR_T.some(x=>t.includes(x));
+  if(mr)return'MR/XR';if(vr&&ar)return'Hybrid/Multi-technology';if(ar)return'AR';if(vr)return'VR';return null;
+}
+function classO(row){
+  const t=`${row.Title||''} ${row.Abstract||''} ${row['Author Keywords']||''}`.toLowerCase();
+  return PED.filter(k=>t.includes(k)).length>=TECH.filter(k=>t.includes(k)).length?'Pedagogical':'Technical';
+}
+
+const dz=document.getElementById('dropZone'),fi=document.getElementById('fileInput');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag-over');});
+dz.addEventListener('dragleave',()=>dz.classList.remove('drag-over'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag-over');if(e.dataTransfer.files[0])hf(e.dataTransfer.files[0]);});
+fi.addEventListener('change',e=>{if(e.target.files[0])hf(e.target.files[0]);});
+
+function hf(file){
+  document.getElementById('fileNameDisplay').textContent='📄 '+file.name;
+  document.getElementById('pipeline-status').style.display='block';
+  initSteps();
+  Papa.parse(file,{header:true,skipEmptyLines:true,dynamicTyping:false,encoding:'UTF-8',complete:r=>pipe(normalizeRows(r.data)),error:e=>alert('Parse error: '+e.message)});
+}
+function initSteps(){
+  document.getElementById('stepsGrid').innerHTML=STEP_DEFS.map(s=>`<div class="step" id="${s.id}"><span class="step-icon">${s.icon}</span><span class="step-label">${s.label}</span><span class="step-count mono" id="${s.id}c">—</span><span class="step-delta" id="${s.id}d"></span></div>`).join('');
+}
+function ms(id,count,prev,note){
+  document.getElementById(id).className='step done';
+  document.getElementById(id+'c').textContent=count.toLocaleString();
+  if(prev!==null){const d=count-prev;document.getElementById(id+'d').textContent=d===0?'±0':d<0?d.toLocaleString():'+'+d;}
+  _log.push({stage:id,records:count,dropped:prev!==null?(prev-count):0,note});
+}
+function pipe(raw){
+  _log=[];ms('s0',raw.length,null,'Raw CSV loaded');
+  let df=raw.map(row=>{const c={};for(const k in row)c[k.replace(/^\uFEFF/,'').trim()]=(row[k]||'').trim();return c;});
+  ms('s1',df.length,raw.length,'Columns cleaned');
+  const s2=new Set();df=df.filter(r=>{const h=JSON.stringify(r);if(s2.has(h))return false;s2.add(h);return true;});
+  ms('s2',df.length,raw.length,'Exact dedup');
+  const sd=new Set(),p3=df.length;df=df.filter(r=>{const d=(r.DOI||'').toLowerCase().trim();if(!d)return true;if(sd.has(d))return false;sd.add(d);return true;});
+  ms('s3',df.length,p3,'DOI dedup');
+  const st=new Set(),p4=df.length;df=df.filter(r=>{const t=(r.Title||'').toLowerCase().replace(/[^a-z0-9\s]/g,'').replace(/\s+/g,' ').trim();if(!t)return true;if(st.has(t))return false;st.add(t);return true;});
+  ms('s4',df.length,p4,'Title dedup');
+  const p5=df.length;df=df.filter(r=>r.Title&&r.Year&&r['Source title']);
+  ms('s5',df.length,p5,'Missing metadata removed');
+  const THEME=['virtual reality','augmented reality','mixed reality','extended reality',' vr ',' ar ',' mr ',' xr ','hmd','oculus','hololens','htc vive','magic leap','360 video','head-mounted','smart glasses'];
+  const hasText=df.some(r=>['Title','Abstract','Author Keywords'].some(k=>String(r[k]||'').trim()!==''));
+  const p6=df.length;
+  if(hasText)df=df.filter(r=>{const t=`${r.Title||''} ${r.Abstract||''} ${r['Author Keywords']||''}`.toLowerCase();return THEME.some(x=>t.includes(x));});
+  ms('s6',df.length,p6,hasText?'XR thematic screen (Title + Abstract + Author Keywords)':'Skipped: no textual bibliographic fields');
+  const p7=df.length,hasYear=df.some(r=>String(r.Year||'').trim()!=='');
+  if(hasYear)df=df.filter(r=>{const y=parseInt(r.Year);return !isNaN(y)&&y>=1991&&y<=2025;});
+  ms('s7',df.length,p7,hasYear?'Publication year 1991-2025':'Skipped: no year column');
+  const mapped=df.map(r=>({...r,Year:parseInt(r.Year),Citations:parseFloat(r['Cited by']||r.Citations||0)||0,Tech_Category:classT(r),Orientation:classO(r)}));
+  const classified=mapped.filter(r=>r.Tech_Category);
+  // XR mode keeps only classified records; generic CSVs remain usable even
+  // when they contain no XR vocabulary.
+  df=classified.length?classified:mapped;
+  ms('s8',df.length,mapped.length,classified.length?'Canonical XR categories':'Generic corpus: no XR classification applied');
+  buildLog();_df=df;buildDash();
+}
+function buildLog(){
+  document.getElementById('pipelineTableWrap').style.display='block';
+  document.getElementById('pipelineTableBody').innerHTML=_log.map(r=>`<tr><td class="mono">${r.stage}</td><td class="mono">${r.records.toLocaleString()}</td><td>${r.dropped>0?`<span class="tag tag-red">−${r.dropped.toLocaleString()}</span>`:`<span class="tag tag-green">±0</span>`}</td><td style="color:var(--text-muted);font-size:.8rem">${r.note}</td></tr>`).join('');
+}
+function buildDash(){
+  document.getElementById('dashboard').style.display='block';
+  cards();[a1,a2,a2b,a4,a5,a5b,a6].forEach(fn=>{try{fn();}catch(e){console.warn('Chart skipped',e);}});
+}
+function cards(){
+  const tot=_df.length,tc=_df.reduce((s,r)=>s+r.Citations,0);
+  const byc={};CAT_ORDER.forEach(c=>byc[c]=0);_df.forEach(r=>{if(byc[r.Tech_Category]!==undefined)byc[r.Tech_Category]++;});
+  const cls={VR:'vr',AR:'ar','MR/XR':'mr','Hybrid/Multi-technology':'hyb'};
+  const known=CAT_ORDER.reduce((s,c)=>s+byc[c],0),other=tot-known;
+  document.getElementById('summaryCards').innerHTML=`<div class="card all"><div class="card-label">Total Records</div><div class="card-value">${tot.toLocaleString()}</div><div class="card-sub">after pipeline</div></div><div class="card all"><div class="card-label">Total Citations</div><div class="card-value">${tc.toLocaleString()}</div><div class="card-sub">Cited by sum</div></div>`+CAT_ORDER.map(c=>`<div class="card ${cls[c]}"><div class="card-label">${c}</div><div class="card-value">${byc[c].toLocaleString()}</div><div class="card-sub">${tot?(100*byc[c]/tot).toFixed(1):0}%</div></div>`).join('')+(other?`<div class="card all"><div class="card-label">Other / unclassified</div><div class="card-value">${other.toLocaleString()}</div><div class="card-sub">generic CSV mode</div></div>`:'');
+}
+function a1(){
+  const yrs=[...new Set(_df.map(r=>r.Year))].sort((a,b)=>a-b);
+  const byc={};CAT_ORDER.forEach(c=>byc[c]=Object.fromEntries(yrs.map(y=>[y,0])));
+  _df.forEach(r=>{if(byc[r.Tech_Category])byc[r.Tech_Category][r.Year]=(byc[r.Tech_Category][r.Year]||0)+1;});
+  Plotly.newPlot('chartPubGrowth',CAT_ORDER.map(c=>({x:yrs,y:yrs.map(y=>byc[c][y]||0),name:c,type:'bar',marker:{color:CAT_COLOR[c]}})),{...DARK,barmode:'stack',legend:{orientation:'h',y:-0.2},margin:{t:10,b:60,l:50,r:10}},{responsive:true});
+  let cums={};CAT_ORDER.forEach(c=>cums[c]=0);
+  Plotly.newPlot('chartCumulative',CAT_ORDER.map(c=>({x:yrs,y:yrs.map(y=>{cums[c]+=(byc[c][y]||0);return cums[c];}),name:c,mode:'lines',fill:'tonexty',line:{color:CAT_COLOR[c],width:2.5},fillcolor:CAT_LIGHT[c]})),{...DARK,legend:{orientation:'h',y:-0.2},margin:{t:10,b:60,l:50,r:10}},{responsive:true});
+}
+function a2(){
+  const yrs=[...new Set(_df.map(r=>r.Year))].sort((a,b)=>a-b);
+  const tr=[];
+  CAT_ORDER.forEach(cat=>{
+    const sub=_df.filter(r=>r.Tech_Category===cat);
+    ['Pedagogical','Technical'].forEach(ori=>{
+      const by=Object.fromEntries(yrs.map(y=>[y,0]));
+      sub.filter(r=>r.Orientation===ori).forEach(r=>by[r.Year]=(by[r.Year]||0)+1);
+      tr.push({x:yrs,y:yrs.map(y=>by[y]),name:`${cat}–${ori}`,mode:'lines+markers',line:{color:CAT_COLOR[cat],width:ori==='Pedagogical'?2.5:1.5,dash:ori==='Technical'?'dash':'solid'},marker:{size:3}});
+    });
+  });
+  Plotly.newPlot('chartOriTrend',tr,{...DARK,legend:{orientation:'h',y:-0.28},margin:{t:10,b:90,l:50,r:10}},{responsive:true});
+  Plotly.newPlot('chartOriStack',['Pedagogical','Technical'].map(ori=>({x:CAT_ORDER,y:CAT_ORDER.map(c=>_df.filter(r=>r.Tech_Category===c&&r.Orientation===ori).length),name:ori,type:'bar',marker:{color:ori==='Pedagogical'?'#1976D2':'#E64A19'}})),{...DARK,barmode:'stack',legend:{orientation:'h',y:-0.2},margin:{t:10,b:80,l:50,r:10}},{responsive:true});
+}
+function a2b(){
+  const yrs=[];for(let y=1991;y<=2025;y++)yrs.push(y);
+  const traces=[],shapes=[],anns=[];
+  CAT_ORDER.forEach((cat,i)=>{
+    const sub=_df.filter(r=>r.Tech_Category===cat);
+    const pN=i===0?'':String(i+1);
+    ['Pedagogical','Technical'].forEach(ori=>{
+      const by=Object.fromEntries(yrs.map(y=>[y,0]));
+      sub.filter(r=>r.Orientation===ori).forEach(r=>by[r.Year]=(by[r.Year]||0)+1);
+      traces.push({x:yrs,y:yrs.map(y=>by[y]),name:ori,mode:'lines+markers',xaxis:'x',yaxis:`y${pN}`,line:{color:ori==='Pedagogical'?'#1976D2':'#E64A19',width:2.5,dash:ori==='Technical'?'dash':'solid'},marker:{size:3},legendgroup:ori,showlegend:i===0});
+    });
+    (TRIGGERS[cat]||[]).forEach(t=>{
+      shapes.push({type:'line',xref:'x',yref:`y${pN} domain`,x0:t.y,x1:t.y,y0:0,y1:1,line:{color:'rgba(248,81,73,.7)',width:2,dash:'dot'}});
+      anns.push({x:t.y,yref:`y${pN} domain`,y:0.5,xref:'x',text:t.l,textangle:-90,font:{size:9,color:'#f85149'},showarrow:false,bgcolor:'rgba(13,17,23,.7)',borderpad:2});
+    });
+  });
+  const n=CAT_ORDER.length,gap=0.03,layoutY={};
+  CAT_ORDER.forEach((_,i)=>{
+    const k=`yaxis${i===0?'':String(i+1)}`;
+    layoutY[k]={domain:[1-(i+1)/n+gap,1-i/n-gap],gridcolor:'#30363d',color:'#e6edf3',title:{text:CAT_ORDER[i],font:{size:10}},anchor:'x'};
+  });
+  Plotly.newPlot('chartHardware',traces,{...DARK,legend:{orientation:'h',y:-0.04},margin:{t:20,b:60,l:70,r:10},xaxis:{gridcolor:'#30363d',title:'Year',dtick:2},shapes,annotations:anns,...layoutY},{responsive:true});
+}
+function a4(){
+  const data=_df.map(r=>{const cs=ctrySet(r.Affiliations||''),lead=ltc((r.Affiliations||'').split(';')[0]);return{cat:r.Tech_Category,lead:lead||null,mcp:cs.length>1};}).filter(r=>r.lead);
+  const gSCP=data.filter(r=>!r.mcp).length,gMCP=data.filter(r=>r.mcp).length;
+  const tot={};data.forEach(r=>tot[r.lead]=(tot[r.lead]||0)+1);
+  const top=Object.entries(tot).sort((a,b)=>b[1]-a[1]).slice(0,12).map(x=>x[0]);
+  const scp={},mcp={};
+  CAT_ORDER.forEach(c=>{scp[c]=Object.fromEntries(top.map(cn=>[cn,0]));mcp[c]=Object.fromEntries(top.map(cn=>[cn,0]));});
+  data.filter(r=>top.includes(r.lead)&&CAT_ORDER.includes(r.cat)).forEach(r=>(r.mcp?mcp:scp)[r.cat][r.lead]++);
+  const bars=[];
+  CAT_ORDER.forEach(c=>bars.push({name:`${c} SCP`,x:top,y:top.map(cn=>scp[c][cn]),type:'bar',marker:{color:CAT_COLOR[c]}}));
+  CAT_ORDER.forEach(c=>bars.push({name:`${c} MCP`,x:top,y:top.map(cn=>mcp[c][cn]),type:'bar',marker:{color:CAT_LIGHT[c]}}));
+  Plotly.newPlot('chartSCPMCP',bars,{...DARK,barmode:'stack',legend:{orientation:'h',y:-0.3,font:{size:10}},margin:{t:10,b:110,l:50,r:10},xaxis:{gridcolor:'#30363d',tickangle:-35},yaxis:{gridcolor:'#30363d',title:'Documents'}},{responsive:true});
+  Plotly.newPlot('chartSCPPie',[{values:[gSCP,gMCP],labels:['Domestic (SCP)','International (MCP)'],type:'pie',hole:.06,marker:{colors:['#4CAF50','#F44336'],line:{color:'#30363d',width:2}},textinfo:'label+percent+value',textfont:{size:13,family:'Inter'}}],{...DARK,margin:{t:40,b:60,l:20,r:20},title:{text:`Global SCP vs MCP  (n=${(gSCP+gMCP).toLocaleString()})`,font:{size:13,color:'#e6edf3'}}},{responsive:true});
+}
+function a5(){
+  const sc={};_df.forEach(r=>{const s=(r['Source title']||'').trim();if(s)sc[s]=(sc[s]||0)+1;});
+  const sorted=Object.entries(sc).sort((a,b)=>b[1]-a[1]);
+  const tot=sorted.reduce((s,x)=>s+x[1],0);
+  let cum=0,z1=[],z2=[],z3=[];
+  for(const[j,c]of sorted){cum+=c;if(cum<=tot/3)z1.push([j,c]);else if(cum<=tot*2/3)z2.push([j,c]);else z3.push([j,c]);}
+  Plotly.newPlot('chartBradford',[{x:['Zone 1 (Core)','Zone 2 (Middle)','Zone 3 (Periphery)'],y:[z1.length,z2.length,z3.length],type:'bar',marker:{color:['#1f4e79','#2e75b6','#89bceb']},text:[`${z1.length} journals\n${z1.reduce((s,x)=>s+x[1],0).toLocaleString()} docs`,`${z2.length} journals\n${z2.reduce((s,x)=>s+x[1],0).toLocaleString()} docs`,`${z3.length} journals\n${z3.reduce((s,x)=>s+x[1],0).toLocaleString()} docs`],textposition:'inside',textfont:{color:'white',size:12}}],{...DARK,margin:{t:10,b:60,l:60,r:10}},{responsive:true});
+  const t15=sorted.slice(0,15);
+  Plotly.newPlot('chartTopJournals',[{x:t15.map(x=>x[1]).reverse(),y:t15.map(x=>x[0].length>42?x[0].slice(0,42)+'…':x[0]).reverse(),type:'bar',orientation:'h',marker:{color:'#58a6ff'},text:t15.map(x=>x[1]).reverse(),textposition:'auto'}],{...DARK,margin:{t:10,b:50,l:230,r:10},xaxis:{gridcolor:'#30363d',title:'Documents'},yaxis:{gridcolor:'#30363d'}},{responsive:true});
+}
+function a5b(){
+  const pk=[];
+  _df.forEach(r=>{const ks=(r['Author Keywords']||'').split(';').map(k=>nkw(k)).filter(k=>k.length>2);if(ks.length)pk.push([...new Set(ks)]);});
+  const cnt={};pk.flat().forEach(k=>cnt[k]=(cnt[k]||0)+1);
+  const top10=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,10).map(x=>x[0]);
+  const n=top10.length,mat=Array.from({length:n},()=>Array(n).fill(0)),idx=Object.fromEntries(top10.map((k,i)=>[k,i]));
+  pk.forEach(p=>{const pr=p.filter(k=>idx[k]!==undefined);pr.forEach(a=>pr.forEach(b=>{if(a!==b)mat[idx[a]][idx[b]]++;}));});
+  top10.forEach((k,i)=>mat[i][i]=cnt[k]);
+  Plotly.newPlot('chartCooccurrence',[{z:mat,x:top10,y:top10,type:'heatmap',colorscale:'YlGnBu',text:mat.map(r=>r.map(v=>String(v))),texttemplate:'<b>%{text}</b>',textfont:{size:12},hoverongaps:false,colorbar:{title:'Freq.',titlefont:{color:'#e6edf3'},tickfont:{color:'#e6edf3'}}}],{...DARK,margin:{t:40,b:130,l:170,r:20},xaxis:{gridcolor:'#30363d',tickangle:-45},yaxis:{gridcolor:'#30363d',autorange:'reversed'},title:{text:'Keyword Co-occurrence Matrix (Top Terms)',font:{size:15,color:'#e6edf3'}}},{responsive:true});
+}
+let _tm=[];
+function a6(){
+  const groups={'Full Corpus':_df};CAT_ORDER.forEach(c=>groups[c]=_df.filter(r=>r.Tech_Category===c));
+  _tm=Object.entries(groups).map(([lbl,rows])=>{
+    if(!rows.length)return null;
+    const n=rows.length,tc=rows.reduce((s,r)=>s+r.Citations,0);
+    const cs=rows.map(r=>r.Citations).sort((a,b)=>b-a);let h=0;cs.forEach((c,i)=>{if(c>=i+1)h=i+1;});
+    const ncp=rows.filter(r=>r.Citations>0).length,pct=(100*ncp/n).toFixed(1)+'%',ccp=ncp>0?(tc/ncp).toFixed(2):0,ac=(tc/n).toFixed(2);
+    const yrs=rows.map(r=>r.Year).filter(Boolean).sort((a,b)=>a-b);
+    const minY=yrs[0],maxY=yrs[yrs.length-1],ts=maxY-minY;
+    const fc=rows.filter(r=>r.Year===minY).length,lc=rows.filter(r=>r.Year===maxY).length;
+    const cagr=fc>0&&ts>0?((Math.pow(lc/fc,1/ts)-1)*100).toFixed(2)+'%':'—';
+    const bc={};yrs.forEach(y=>bc[y]=(bc[y]||0)+1);
+    const pkY=Object.entries(bc).sort((a,b)=>b[1]-a[1])[0][0];
+    return{lbl,n:n.toLocaleString(),tc:tc.toLocaleString(),h,cagr,ac,ncp:ncp.toLocaleString(),pct,ccp,minY,pkY};
+  }).filter(Boolean);
+  const cols=['Category','N','Total Cit.','H-index','CAGR','AC','NCP','%Cited','CCP','First','Peak'];
+  const ks=['lbl','n','tc','h','cagr','ac','ncp','pct','ccp','minY','pkY'];
+  document.getElementById('biblioTableWrap').innerHTML=`<table class="pipeline-table" style="min-width:700px;"><thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${_tm.map(r=>`<tr>${ks.map(k=>`<td class="mono">${r[k]}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+}
+function downloadTableCSV(){
+  if(!_tm.length)return;
+  const ks=['lbl','n','tc','h','cagr','ac','ncp','pct','ccp','minY','pkY'];
+  const hdr=['Category','N','Total Citations','H-index','CAGR','AC','NCP','%Cited','CCP','First Year','Peak Year'];
+  const rows=[hdr.join(','),..._tm.map(r=>ks.map(k=>`"${r[k]}"`).join(','))];
+  const b=new Blob([rows.join('\n')],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='bibliometric_table.csv';a.click();
+}
+</script>
+</body>
+</html>
