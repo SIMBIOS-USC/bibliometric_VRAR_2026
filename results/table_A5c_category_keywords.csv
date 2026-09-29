@@ -1,0 +1,51 @@
+category,keyword,count
+VR,virtual reality,3290
+VR,simulations,463
+VR,education,381
+VR,medical education,197
+VR,training,197
+VR,immersive virtual reality,130
+VR,nursing education,123
+VR,virtual reality simulation,109
+VR,learning,102
+VR,laparoscopy,96
+AR,augmented reality,1320
+AR,education,111
+AR,mobile learning,97
+AR,educational technology,61
+AR,learning,56
+AR,motivation,51
+AR,higher education,45
+AR,game-based learning,42
+AR,technology,36
+AR,gamification,32
+MR,mixed reality,213
+MR,augmented reality,147
+MR,virtual reality,124
+MR,simulations,36
+MR,education,35
+MR,medical education,32
+MR,hololens,28
+MR,extended reality,22
+MR,training,16
+MR,learning,15
+XR,extended reality,85
+XR,virtual reality,71
+XR,augmented reality,45
+XR,education,25
+XR,metaverse,16
+XR,medical education,11
+XR,immersive technologies,7
+XR,technology,7
+XR,educational technology,6
+XR,artificial intelligence,6
+Hybrid/Multi-technology,augmented reality,298
+Hybrid/Multi-technology,virtual reality,263
+Hybrid/Multi-technology,education,57
+Hybrid/Multi-technology,simulations,30
+Hybrid/Multi-technology,artificial intelligence,26
+Hybrid/Multi-technology,metaverse,23
+Hybrid/Multi-technology,medical education,20
+Hybrid/Multi-technology,higher education,20
+Hybrid/Multi-technology,technology,19
+Hybrid/Multi-technology,augmented and virtual reality,17
