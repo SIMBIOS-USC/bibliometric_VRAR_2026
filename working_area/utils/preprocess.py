@@ -30,6 +30,7 @@ import re
 import unicodedata
 import pandas as pd
 from pathlib import Path
+from utils.normalizer import apply_normalization
 
 
 # ---------------------------------------------------------------------------
@@ -362,6 +363,10 @@ def run_pipeline(csv_path: str | Path) -> tuple[pd.DataFrame, list[dict]]:
     report.append(info)
 
     df, info = _stage1_standardize_columns(df)
+    report.append(info)
+
+    # Stage 1b — institution abbreviation expansion + author name normalization
+    df, info = apply_normalization(df)
     report.append(info)
 
     df, info = _stage2_exact_duplicates(df)
